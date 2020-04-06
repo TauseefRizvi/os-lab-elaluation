@@ -1,0 +1,55 @@
+#include<stdio.h>
+#include<pthread.h>
+#include<semaphore.h>
+
+sem_t mutx,wrtblk;
+
+int info = 0,counter = 0;
+
+void *readr(void *para)
+{
+  int l;
+  l = ((int)para);
+  sem_wait(&mutx);
+  counter = counter + 1;
+  if(counter==1)
+   sem_wait(&wrtblk);
+  sem_post(&mutx);
+  printf("this is read READER%d is %d\n",l,info);
+  sleep(1);
+  sem_wait(&mutx);
+  counter = counter - 1;
+  if(counter==0)
+   sem_post(&wrtblk);
+  sem_post(&mutx);
+}
+
+void *wrtr(void *para)
+{
+  int l;
+  l = ((int)para);
+  sem_wait(&wrtblk);
+  info++;
+  printf("Information written by WRITER %d is %d\n",l,info);
+  sleep(1);
+  sem_post(&wrtblk);
+}
+
+int main()
+{
+  int j,b; 
+  pthread_t idrd[5],idwr[5];
+  sem_init(&mutx,0,1);
+  sem_init(&wrtblk,0,1);
+  for(j=0;j<=2;j++)
+  {
+    pthread_create(&idwr[j],NULL,wrtr,(void *)j);
+    pthread_create(&idrd[j],NULL,readr,(void *)j);
+  }
+  for(j=0;j<=2;j++)
+  {
+    pthread_join(idwr[j],NULL);
+    pthread_join(idrd[j],NULL);
+  }
+  return 0;
+}
